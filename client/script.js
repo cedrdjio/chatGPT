@@ -38,8 +38,8 @@ function chatStrip(isAi, value, uniqueId) {
   return `
         <div class="wrapper ${isAi && " ai"}">
             <div class="chat">
-                <div className="profile">
-                <img src="${isAi ? bot : user}" alt="${isAi ? " bot" : "user" }" />
+                <div class="profile">
+                <img src="${isAi ? bot : user}" alt="${isAi ? " bot" : "user"}" />
                 </div>
                 <div class="message" id = ${uniqueId}>${value}</div>
             </div>
@@ -48,22 +48,43 @@ function chatStrip(isAi, value, uniqueId) {
 }
 
 const handleSubmit = async (e) => {
-    e.preventDefault();
-    const data = new FormData(form);
+  e.preventDefault();
+  const data = new FormData(form);
 
-    //user's chatstripe
-    chatContainer.innerHTML += chatStrip(false, data.get("prompt"));
-    form.reset();
-    //bot's chatstripe
-    const uniqueId = generateUniqueId();
-    chatContainer.innerHTML += chatStrip(true, " ", uniqueId);
-    const botMessage = document.getElementById(uniqueId);
-    loader(botMessage);
+  //user's chatstripe
+  chatContainer.innerHTML += chatStrip(false, data.get("prompt"));
+  form.reset();
+  //bot's chatstripe
+  const uniqueId = generateUniqueId();
+  chatContainer.innerHTML += chatStrip(true, " ", uniqueId);
+  const botMessage = document.getElementById(uniqueId);
+  loader(botMessage);
+
+  //fetching data from server
+  const response = await fetch("http://localhost:3000/", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      prompt: data.get("prompt"),
+    }),
+  });
+  console.log(data.get("prompt"));
+  clearInterval(loadInterval);
+  botMessage.innerHTML = "";
+  if(response.ok){
+    const data = await response.json();
+    typeText(botMessage, data.bot.trim());
+  }else{
+    const err = await response.json();
+    botMessage.innerHTML = "Something went wrong";
+    console.log(err);
+    // alert(err);
+  }
 };
 
 form.addEventListener("submit", handleSubmit);
 form.addEventListener("keyup", (e) => {
-    if(e.key==="Enter") {
-        handleSubmit(e);
-    }
+  if (e.key === "Enter") {
+    handleSubmit(e);
+  }
 });
